@@ -1,0 +1,87 @@
+services:
+  postgresql:
+    image: postgres:16-alpine
+    container_name: postgresql
+    restart: unless-stopped
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data    # data volume
+    networks:
+      - internal-net  
+    env_file: 
+      - '.env'      # file with variables
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_HOST_PASSWORD}"]
+    networks:
+      - internal-net
+    env_file: 
+      - '.env'      # file with variables
+
+  app:
+    image: nextcloud:fpm
+    container_name: nextcloud
+    restart: unless-stopped
+    depends_on:
+      - postgresql
+      - redis
+    volumes:
+      - ./nextcloud:/var/www/html
+    env_file:
+      - '.env'
+    networks:
+      - internal-net  
+
+  cron:
+    image: nextcloud:fpm
+    container_name: nextcloud-cron
+    restart: unless-stopped
+    depends_on:
+     - app
+     - postgresql
+     - redis    
+    volumes:
+      - ./nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    env_file:
+      - '.env'
+    networks:
+      - internal-net
+
+  web:
+    image: nginx:alpine
+    container_name: nextcloud-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '8080:80'      
+      - '8843:443'
+    volumes:
+      - ./nextcloud/:/var/www/html:ro
+      - ./nginx/nextcloud.conf:/etc/nginx/nginx.conf:ro  
+    networks:
+      - internal-net  
+
+  proxy:
+    image: nginx:alpine
+    container_name: reverse-proxy
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - '80:80'      
+      - '443:443'
+    volumes:
+      - ./nginx-reverse-proxy/reverse.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx-reverse-proxy/certs:/etc/nginx/certs:ro
+    networks:
+      - internal-net  
+
+networks:
+  internal-net:
+    driver: bridge
+
+    
