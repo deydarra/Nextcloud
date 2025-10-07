@@ -1,0 +1,4 @@
+/home/tconet/nc/nginx-reverse-proxy/certs/nextcloud.cer
+/home/tconet/nc/nginx-reverse-proxy/certs/nextcloud.csr
+/home/tconet/nc/nginx-reverse-proxy/certs/nextcloud.key
+/home/tconet/nc/nginx-reverse-proxy/certs/nextcloud.rsp
