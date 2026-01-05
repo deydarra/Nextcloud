@@ -13,11 +13,14 @@
 5. Manipulation with cerificates.
     a) First of all 'san.conf' file should be changed. The file exist at the path: /nginx-reverse-proxy/certs . You should also change CN and DNS parameters in this config and configure it as you have configured in AD DNS Server A records.
     
-    b) Than you should create certificate and private key with next command:
+    b) Than you should create certificate sign request file and private key with next command:
+        
         openssl req -new -newkey rsa:4096 -nodes -keyout nextcloud.key -out nextcloud.csr -config san.conf
     
     c) After that copy the nextcloud.csr file to AD CA Server. In AD CA Server run the command with  powershell:
+        
         certreq -submit -attrib "CertificateTemplate:WebServer" nextcloud.csr nextcloud.cer            
+    
     This command create two files *.cer and *.rsp 
     Copy this files back to the Debian Server in the folder /nginx-reverse-proxy/certs
 
@@ -44,3 +47,5 @@
 
 LOGS:
     nextcloud: /var/www/html/data/nextcloud.log
+
+##-------------------------------ADDITIONAL----------------------------------------
