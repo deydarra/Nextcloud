@@ -25,7 +25,7 @@ services:
 
   # Container with main nextcloud application
   app:
-    image: nextcloud:fpm
+    build: .
     container_name: nextcloud
     restart: unless-stopped
     depends_on:
@@ -84,6 +84,7 @@ services:
     volumes:
       - ./nginx-reverse-proxy/reverse.conf:/etc/nginx/nginx.conf:ro
       - ./nginx-reverse-proxy/certs:/etc/nginx/certs:ro
+      - ./nginx-reverse-proxy/snippets:/etc/nginx/snippets:ro
     networks:
       - internal-net  
  
@@ -99,6 +100,28 @@ services:
       - ./portainer:/data
     networks:
       - internal-net    
+
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia    
+    restart: unless-stopped
+    ports:
+      - '9091:9091'
+    volumes:
+      - ./authelia/:/config/  
+    networks:
+      - internal-net  
+    environment:
+      AUTHELIA_JWT_SECRET_FILE: /config/secrets/jwt_secret.txt     
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/session_secret.txt
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/storage_key.txt
+      SSL_CERT_FILE: /config/secrets/TCONET-CA.crt
+      AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /config/secrets/ldap_pass.txt
+      AUTHELIA_IDENTITY_PROVIDERS_OIDC_ISSUER_PRIVATE_KEY_FILE: /config/secrets/oidc.key
+    depends_on:
+      - "redis" 
+    extra_hosts:
+      - "kos-authelia.intern.tconet.de:192.168.0.40"   
 
 networks:
   internal-net:

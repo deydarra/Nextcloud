@@ -2,3 +2,10 @@ nginx-reverse-proxy/certs/nextcloud.cer
 nginx-reverse-proxy/certs/nextcloud.csr
 nginx-reverse-proxy/certs/nextcloud.key
 nginx-reverse-proxy/certs/nextcloud.rsp
+nginx-reverse-proxy/certs/TCONET-CA.crt
+authelia/secrets/
+authelia/notification.txt
+ 
+
+ 
+ 

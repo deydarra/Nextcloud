@@ -1,0 +1,92 @@
+server:
+  address: "0.0.0.0:9091"           # listen all interfaces on port 9091
+
+log:
+  level: info     # debug level need more perfomance
+
+
+session:
+  name: authelia_session
+  cookies:
+    - domain: intern.tconet.de                                        # cokkies are valid for this domain
+      authelia_url: https://kos-authelia.intern.tconet.de
+  expiration: 1h                                                       # time before cookie expires and the session will be destroyed
+  inactivity: 5m                                                      # inactivity time, then session will be destroyed
+  same_site: lax
+  remember_me_duration: 6m
+  redis:
+    host: redis
+    port: 6379
+    password: RedisPassword2025
+    database_index: 3
+
+
+storage:                                                                # storage is being created automaticaly by Authelia
+  local:
+    path: '/config/db.sqlite3'                                          # local storage provider SQLite3 Database, in biger production best to use Postgresql
+                                
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: "kos-authelia.intern.tconet.de"          # give to this domain access without  credentials, for another domains it requires (username, password)
+      policy: bypass
+    - domain: "kos-nextcloud.intern.tconet.de"
+      policy: one_factor
+    
+    
+
+authentication_backend:
+  ldap:
+    implementation: activedirectory
+    address: ldaps://SRV05.intern.tconet.de # ldap on port 389
+    start_tls: false         # command that turn on encryption protocol command
+    base_dn: DC=intern,DC=tconet,DC=de
+    timeout: 5s
+    #additional_users_dn: OU=_Benutzer        # if all necessary users exist in one OU
+    #users_filter: "(&(objectClass=person)({username_attribute}={input}))"     # check the user input 
+    #groups_filter: "(&(|(objectClass=group)(objectClass=posixGroup))(member={dn}))"
+    #group_name_attribute: "cn"
+    permit_referrals: false
+    attributes:
+      username: sAMAccountName
+      display_name: cn
+      mail: mail
+    user: CN=kos-ldap,OU=TCONet_Users,DC=intern,DC=tconet,DC=de       # user that was in AD created for authelia service
+
+identity_providers:
+  oidc:
+    
+    ## The other portions of the mandatory OpenID Connect 1.0 configuration go here.
+    ## See: https://www.authelia.com/c/oidc
+    clients:
+      - client_id: 'nextcloud'
+        client_name: 'NextCloud'
+        client_secret: '$pbkdf2-sha512$310000$Yoe8gRuxg1.W5ZNfNb74DQ$FGVpg5tfUw8wN9m17tbRpEHxX1y966o4MB6DQlZQKqcudseYfSwp1seJpQFV3HEPIWLUaBkQK5DvF9D0hMw3kQ'  # The digest of 'insecure_secret'.
+        public: false
+        authorization_policy: 'one_factor'
+        require_pkce: true
+        pkce_challenge_method: 'S256'
+        redirect_uris:
+          - 'https://kos-nextcloud.intern.tconet.de/apps/user_oidc/code'
+        scopes:
+          - 'openid'
+          - 'profile'
+          - 'email'
+          - 'groups'
+          
+          
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
+        userinfo_signed_response_alg: 'none'
+        consent_mode: implicit         # auto-confirmation
+        token_endpoint_auth_method: 'client_secret_post'
+    
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt
+
