@@ -5,9 +5,11 @@
 2. Add DNS A record with relevant VM's IP address. You should add at least three CN records for the nextcloud, portainer and authelia containers.
     In this example we have:
         
+        
         kos-nextcloud.intern.tconet.de => 192.168.0.40
         kos-portainer.intern.tconet.de => 192.168.0.40
         kos.authelia.intern.tconet.de  => 192.168.0.40
+        
 
 3. In the nginx configuration file '/nginx-reverse-proxy/reverse.conf', you should change only "server_name" parameter for each relevant virtual server. In the "proxy_pass" parameter you should use the relevant docker's container name.
 
@@ -16,27 +18,34 @@
     a) In this test example only one certificate is used for three domains. In the '/nginx-reverse-proxy/certs/san.conf' file change the alternative names [alt_names] for each relevant nginx virtual server. IN PRODUCTION ISSUE THE CERTIFICATE FOR EACH DOMAIN:
 
     b) Than you should create certificate sign request file and private key with next command:
-        
+
+          
         openssl req -new -newkey rsa:4096 -nodes -keyout nextcloud.key -out nextcloud.csr -config san.conf
+        
     
     c) After that copy the nextcloud.csr file to AD CA Server. In AD CA Server run the command with  powershell:
         
+        
         certreq -submit -attrib "CertificateTemplate:WebServer" nextcloud.csr nextcloud.cer            
+        
     
     This command create two files "*.cer" and "*.rsp". Copy this files back to the Debian Server in the folder /nginx-reverse-proxy/certs
 
     d) You should also add root AD CA certificate to your VM. Go to the AD CA Server, open "Zertifizierungsstelle" => right click on the server => "Eigenschaften" => "Zertifikat anzeigen" => "Details" => "In Datei kopieren" => "Base-64-codiert X.509(.CER)" => and give the name as the AD CA Server name. Copy this "*.cer" file to the directory on your Debian VM /usr/local/share/ca-certificates/ and run the commands:
 
+        
         sudo mv *.cer *.crt
         sudo update-ca-certificates
+    
 
     This root CA certificate should be also added into nextcloud container, that's why you should put it to the following path '/nginx-reverse-proxy/certs/'.
 
 6. The '.env' file in root directory stores the necessary environment variables as usernames and passwords which can be changed on demand. You SHOULD ADD or CHANGE trusted NEXTCLOUD_TRUSTED_DOMAINS parameter. Your all domain names  and ip addresses on which nextcloud is accessible should be added. In this example it's:
     NEXTCLOUD_TRUSTED_DOMAINS=localhost 127.0.0.1 192.168.0.40 kos-nextcloud.intern.tconet.de
 
-7. Paste the code below into the following config file '/nextcloud/config/config.php'
-
+7. Paste the code below into the following config file '/nextcloud/config/config.php':
+    
+    ```
     $CONFIG = array (
     'memcache.local' => '\\OC\\Memcache\\APCu',
     'apps_paths' =>
@@ -126,17 +135,22 @@
     'allow_local_remote_servers' => 'true',
     'ldapProviderFactory' => 'OCA\\User_LDAP\\LDAPProviderFactory',
     );
+    ```
 
 8. To create the Authelias secrets, do the following
 
+    ```
     docker exec -it authelia sh
     authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986
-
+    ```
+    
     Than paste the "digest" secret into following file 'authelia/configuration.yml', parameter "client_secret". Paste the another secret into '/nextcloud/config/config.php', 'oidc_login_client_secret' parameter.
 
 9. In conclusion you can run the command:
     
+    ```
     docker compose up -d
+    ```
 
 
 
@@ -145,8 +159,11 @@
 ##-------------------------------ADDITIONAL----------------------------------------
 
 1. If the password for admin has been lost, use the follow command:
+
+    ```
     docker exec -u www-data -it nextcloud php occ maintenance:mode --off
     docker exec -u www-data -it nextcloud php occ user:resetpassword admin
+    ```
 
 
 LOGS:
